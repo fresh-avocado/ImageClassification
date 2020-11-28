@@ -45,26 +45,24 @@ int main() {
         }
     }
 
-    VC<float> query = VC<float>("./CK+48/sadness/S014_002_00000015.png");
-
-    vector< pair< double, VC<float> > > result;
-
-    for (const auto& img : imagenes) {
-        double distancia = dist3<float>(img, query);
-        result.push_back({distancia, img});
-    }
-
-    sort(all(result), [](auto& left, auto& right) {
-        return left.first > right.first;
-    });
-
-    int k = 5;
-
-    cout << "Displaying " << k << " nearest neighbors...\n";
-
-    for (int i = 0; i < k; ++i) {
-        CImg<float> img(result[i].second.getImgPath());
-        img.display();
+    for (const auto& q : queries) {
+        VC<float> query = VC<float>(q);
+        vector< pair< double, VC<float> > > result;
+        for (const auto& img : imagenes) {
+            double distancia = dist3<float>(img, query);
+            result.push_back({distancia, img});
+        }
+        sort(all(result), [](auto& left, auto& right) {
+            return left.first > right.first;
+        });
+        int k = 5;
+        CImg<unsigned char> output (query.getImgPath());
+        cout << "Displaying " << k << " nearest neighbors...\n";
+        for (int i = 0; i < k; ++i) {
+            CImg<float> img(result[i].second.getImgPath());
+            output = output.append(img, 'x');
+        }
+        output.display();
     }
 
     return 0;
