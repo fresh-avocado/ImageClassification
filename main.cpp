@@ -1,28 +1,71 @@
 #include <CGAL/Simple_cartesian.h>
-#include <CGAL/point_generators_2.h>
-#include <CGAL/Orthogonal_k_neighbor_search.h>
+#include <CGAL/Orthogonal_incremental_neighbor_search.h>
 #include <CGAL/Search_traits_2.h>
-#include <list>
-#include <cmath>
+#include <CGAL/Kernel_d/Vector_d.h>
 
-typedef CGAL::Simple_cartesian<double> K;
-typedef K::Point_2 Point_d;
-typedef CGAL::Search_traits_2<K> TreeTraits;
-typedef CGAL::Orthogonal_k_neighbor_search<TreeTraits> Neighbor_search;
-typedef Neighbor_search::Tree Tree;
+#include "VectorCaracteristico.h"
+#include "funciones.h"
+#include <algorithm>
+#include <random>
+
+#define all(x) begin(x), end(x)
+
+using namespace CGAL;
+
+const int D = 48;
 
 int main() {
-     const unsigned int N = 1;
-     std::list<Point_d> points;
-     points.push_back(Point_d(0,0));
-     Tree tree(points.begin(), points.end());
-     Point_d query(0,0);
-     // Initialize the search structure, and search all N points
-     Neighbor_search search(tree, query, N);
-     // report the N nearest neighbors and their distance
-     // This should sort all N points by increasing distance from origin
-     for(Neighbor_search::iterator it = search.begin(); it != search.end(); ++it) {
-          std::cout << it->first << " "<< std::sqrt(it->second) << std::endl;
+
+    string imgPath = "./CK+48/happy/S010_006_00000014.png";
+    CImg<float> A(imgPath.c_str());
+    CImg<float> B = A.haar(false, 1);
+//     B.display();
+
+    vector<VC<float>> imagenes; // 70%
+    vector<VC<float>> queries; // 30%
+
+    ifstream file("rutas");
+    vector<string> paths;
+    if (file.is_open()) {
+        string path;
+        while (getline(file, path)) {
+            paths.push_back(path);
+        }
+        file.close();
+    }
+
+    auto rng = std::default_random_engine {};
+    std::shuffle(std::begin(paths), std::end(paths), rng);
+    for (int i = 0; i < paths.size(); ++i) {
+        VC<float> vc = VC<float>(paths[i].c_str());
+        if (i < floor(paths.size() * 0.7)) {
+            imagenes.push_back(vc);
+        } else {
+            queries.push_back(vc);
+        }
+    }
+
+     VC<float> query = VC<float>("./CK+48/sadness/S014_002_00000015.png");
+
+     vector< pair< double, VC<float> > > result;
+
+     for (const auto& img : imagenes) {
+          double distancia = dist3<float>(img, query);
+          result.push_back({distancia, img});
      }
-     return 0;
+
+     sort(all(result), [](auto& left, auto& right) {
+          return left.first > right.first;
+     });
+
+     int k = 5;
+
+     cout << "Displaying " << k << " nearest neighbors...\n";
+
+     for (int i = 0; i < k; ++i) {
+          CImg<float> img(result[i].second.getImgPath());
+          img.display();
+     }
+
+    return 0;
 }
